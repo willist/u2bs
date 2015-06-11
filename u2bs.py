@@ -19,24 +19,24 @@ class ThrottlingProcessor(urllib2.BaseHandler):
     """
     __shared_state = {}
 
-    def __init__(self, throttleDelay=5):
+    def __init__(self, throttle_delay=5):
         """The number of seconds to wait between subsequent requests"""
         # Using the Borg design pattern to achieve shared state
         # between object instances:
         self.__dict__ = self.__shared_state
-        self.throttleDelay = throttleDelay
+        self.throttle_delay = throttle_delay
         if not hasattr(self, 'lastRequestTime'):
             self.lastRequestTime = {}
 
     def default_open(self, request):
-        currentTime = time.time()
+        current_time = time.time()
 
-        delta = currentTime - self.lastRequestTime.get(request.host, 0)
+        delta = current_time - self.lastRequestTime.get(request.host, 0)
 
-        if delta < self.throttleDelay:
-            self.throttleTime = self.throttleDelay - delta
+        if delta < self.throttle_delay:
+            self.throttleTime = self.throttle_delay - delta
             time.sleep(self.throttleTime)
-        self.lastRequestTime[request.host] = currentTime
+        self.lastRequestTime[request.host] = current_time
 
         return None
 
@@ -56,11 +56,11 @@ class CacheHandler(urllib2.BaseHandler):
     If a subsequent GET request is made for the same URL, the stored
     response is returned, saving time, resources and bandwith"""
 
-    def __init__(self, cacheLocation):
+    def __init__(self, cache_location):
         """The location of the cache directory"""
-        self.cacheLocation = cacheLocation
-        if not os.path.exists(self.cacheLocation):
-            os.makedirs(self.cacheLocation)
+        self.cache_location = cache_location
+        if not os.path.exists(self.cache_location):
+            os.makedirs(self.cache_location)
 
     def default_open(self, request):
         if request.get_method() != "GET":
@@ -68,10 +68,10 @@ class CacheHandler(urllib2.BaseHandler):
 
         full_url = request.get_full_url()
 
-        if CachedResponse.ExistsInCache(self.cacheLocation, full_url):
+        if CachedResponse.exists_in_cache(self.cache_location, full_url):
             # print "CacheHandler: Returning CACHED response for %s" %
             # request.get_full_url()
-            return CachedResponse(self.cacheLocation, request.get_full_url())
+            return CachedResponse(self.cache_location, request.get_full_url())
         else:
             return None # let the next handler try to handle the request
 
@@ -80,8 +80,8 @@ class CacheHandler(urllib2.BaseHandler):
             return response
 
         if 'x-fs-cache' not in response.info():
-            CachedResponse.StoreInCache(
-                self.cacheLocation, request.get_full_url(), response)
+            CachedResponse.store_in_cache(
+                self.cache_location, request.get_full_url(), response)
 
         return response
 
@@ -95,25 +95,25 @@ class CachedResponse(StringIO.StringIO):
     the network, check the x-fs-cache header rather than the object type."""
 
     @staticmethod
-    def FileNameGenerator(cacheLocation, url):
+    def file_name_generator(cache_location, url):
         hashed_url = md5.new(url).hexdigest()
-        path = os.path.join(cacheLocation, hashed_url)
+        path = os.path.join(cache_location, hashed_url)
         headers_file = '{0}.headers'.format(path)
         body_file = '{0}.body'.format(path)
 
         return headers_file, body_file
 
     @staticmethod
-    def ExistsInCache(cacheLocation, url):
-        headers_file, body_file = CachedResponse.FileNameGenerator(
-            cacheLocation, url)
+    def exists_in_cache(cache_location, url):
+        headers_file, body_file = CachedResponse.file_name_generator(
+            cache_location, url)
 
         return (os.path.exists(headers_file) and os.path.exists(body_file))
 
     @staticmethod
-    def StoreInCache(cacheLocation, url, response):
-        headers_file, body_file = CachedResponse.FileNameGenerator(
-            cacheLocation, url)
+    def store_in_cache(cache_location, url, response):
+        headers_file, body_file = CachedResponse.file_name_generator(
+            cache_location, url)
 
         f = open(headers_file, "w")
         headers = str(response.info())
@@ -124,11 +124,11 @@ class CachedResponse(StringIO.StringIO):
         f.write(response.read())
         f.close()
 
-    def __init__(self, cacheLocation, url, setCacheHeader=True):
-        self.cacheLocation = cacheLocation
+    def __init__(self, cache_location, url, set_cache_header=True):
+        self.cache_location = cache_location
         hashed_url = md5.new(url).hexdigest()
-        headers_file, body_file = CachedResponse.FileNameGenerator(
-            cacheLocation, url)
+        headers_file, body_file = CachedResponse.file_name_generator(
+            cache_location, url)
 
         StringIO.StringIO.__init__(self, file(body_file).read())
 
@@ -137,9 +137,9 @@ class CachedResponse(StringIO.StringIO):
         self.msg = "OK"
         headerbuf = file(headers_file).read()
 
-        if setCacheHeader:
+        if set_cache_header:
             headerbuf += "x-fs-cache: %s/%s\r\n" % (
-                self.cacheLocation, hashed_url)
+                self.cache_location, hashed_url)
         self.headers = httplib.HTTPMessage(StringIO.StringIO(headerbuf))
 
     def info(self):
