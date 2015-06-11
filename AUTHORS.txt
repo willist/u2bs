@@ -1,0 +1,4 @@
+Authors ordered by first contribution.
+
+Staffan Malmgren <staffan@tomtebo.org>
+Tim Willis <github.com/willist>

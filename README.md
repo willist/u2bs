@@ -1,6 +1,9 @@
-# urllib2_openers
-http://code.activestate.com/recipes/491261/
+# u2bs
 
-# INSTALL
+Library of *u*rllib*2* *b*uilder*s*
 
-    pip install git+git://github.com/willist/urllib2_openers.git@v0.0.1
+Forked from http://code.activestate.com/recipes/491261/
+
+## INSTALL
+
+    pip install git+git://github.com/willist/u2bs.git@v0.0.1
